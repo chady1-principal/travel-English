@@ -1,0 +1,653 @@
+# 수준별 무한 여행 영어 암기 챌린지 앱
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수준별 무한 여행 영어 암기 챌린지</title>
+    <!-- Tailwind CSS 공식 승인 CDN 사용 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 커스텀 플래시 카드 입체 애니메이션 효과 */
+        .card-flip {
+            perspective: 1000px;
+        }
+        .card-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .card-flipped {
+            transform: rotateY(180deg);
+
+        }
+        .card-front, .card-back {
+            backface-visibility: hidden;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+        /* 스크롤바 디자인 최적화 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col justify-between antialiased">
+
+    <!-- 상단 헤더 영역 -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl">✈️</span>
+                <h1 class="text-xl font-bold tracking-tight text-slate-900">Travel English Infinite</h1>
+            </div>
+            <button id="reset-btn" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1.5 rounded-lg transition-colors font-medium">
+                기록 초기화
+            </button>
+        </div>
+    </header>
+
+    <!-- 메인 레이아웃 본문 -->
+    <main class="flex-grow max-w-md w-full mx-auto px-4 py-5 space-y-5">
+        
+        <!-- 마스터 통계 및 누적 점수 대시보드 -->
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Mastery</p>
+                    <h2 class="text-lg font-bold text-slate-800"><span id="level-badge-text">초급</span> 여행 회복력</h2>
+                </div>
+                <div class="text-right">
+                    <span id="mastery-count" class="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full">총 0개 문장 마스터</span>
+                </div>
+            </div>
+            <p class="text-xs text-slate-400">무한히 생성되는 데일리 카드를 정복하며 나만의 여행 가이드북을 완성하세요.</p>
+        </div>
+
+        <!-- 수준별 학습 탭 컨트롤러 -->
+        <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">여행 영어 난이도</label>
+            <div class="grid grid-cols-3 gap-2 bg-slate-200/60 p-1 rounded-xl border border-slate-200">
+                <button id="tab-beginner" class="level-tab py-2 text-sm font-bold rounded-lg transition-all shadow-none">
+                    🌱 초급
+
+                </button>
+                <button id="tab-intermediate" class="level-tab py-2 text-sm font-bold rounded-lg transition-all shadow-none">
+                    🌿 중급
+                </button>
+                <button id="tab-advanced" class="level-tab py-2 text-sm font-bold rounded-lg transition-all shadow-none">
+                    🔥 고급
+                </button>
+            </div>
+        </div>
+
+        <!-- 중앙 인터랙티브 플래시 암기 카드 -->
+        <div class="space-y-3">
+            <div class="flex justify-between items-center px-1">
+                <span id="card-day-indicator" class="text-sm font-extrabold text-indigo-600 tracking-wider">DAY 1</span>
+                <span class="text-xs text-slate-400">카드를 터치하면 한글 번역이 나타납니다</span>
+            </div>
+            
+            <div id="flashcard" class="card-flip w-full h-64 cursor-pointer">
+                <div id="card-inner" class="card-inner w-full h-full relative rounded-3xl shadow-md border border-indigo-100">
+
+                    
+                    <!-- 카드 앞면: 영어 문장 및 TTS 엔진 재생 -->
+                    <div class="card-front absolute inset-0 bg-gradient-to-br from-indigo-600 to-violet-600 p-6 flex flex-col justify-between rounded-3xl text-white">
+                        <div class="flex justify-between items-center">
+                            <span id="card-context-tag" class="text-xs bg-white/20 px-2.5 py-1 rounded-md backdrop-blur-sm font-medium tracking-wide">공항/기내</span>
+                            <button id="speak-btn" class="bg-white/20 hover:bg-white/30 p-2 rounded-full backdrop-blur-sm transition-colors text-base flex items-center justify-center w-9 h-9" title="원어민 오디오 듣기">
+                                🔊
+                            </button>
+                        </div>
+                        <div class="text-center py-2 px-1">
+                            <p id="txt-eng" class="text-xl md:text-2xl font-bold leading-relaxed tracking-wide break-words">Where is the check-in counter?</p>
+                        </div>
+                        <div class="text-center text-xs text-white/60 font-medium tracking-wider">
+                            CLICK TO FLIP CARD
+                        </div>
+                    </div>
+
+                    <!-- 카드 뒷면: 번역의 가치 및 상세 상황별 가이드 팁 텍스트 -->
+                    <div class="card-back absolute inset-0 bg-white p-6 flex flex-col justify-between rounded-3xl border border-slate-200">
+
+                        <div class="flex justify-between items-start border-b border-slate-100 pb-2">
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium">한글 뜻 및 여행 현지 팁</span>
+                            <span class="text-xl">💡</span>
+                        </div>
+                        <div class="space-y-2.5 text-center my-auto px-1">
+                            <p id="txt-kor" class="text-lg font-bold text-slate-800">체크인 카운터는 어디에 있나요?</p>
+                            <p id="txt-desc" class="text-xs text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100 text-left"></p>
+                        </div>
+                        <div class="text-center text-xs text-slate-400 font-medium tracking-wider">
+                            CLICK TO FLIP CARD
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- 제어 및 테스트 상호작용 액션 버튼 -->
+        <div class="grid grid-cols-2 gap-3">
+
+            <button id="quiz-btn" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 py-3.5 px-4 rounded-2xl font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 touch-manipulation">
+                <span>🧩</span> <span>스피드 단어 퀴즈</span>
+            </button>
+            <button id="complete-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 px-4 rounded-2xl font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 touch-manipulation">
+                <span>✅</span> <span id="complete-btn-text">이 문장 완벽히 외웠어요</span>
+            </button>
+        </div>
+
+        <!-- 무한 일차 무제한 스크롤 및 탐색 내비게이션 바 -->
+        <div class="space-y-2.5">
+            <div class="flex justify-between items-center px-1">
+                <h3 class="text-sm font-bold text-slate-700">전체 여행 달력 (무한 챌린지)</h3>
+                <div class="flex items-center space-x-1">
+                    <button id="btn-prev-page" class="bg-white hover:bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg text-xs font-semibold text-slate-600 disabled:opacity-40">&lt; 이전</button>
+                    <span id="page-indicator" class="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-lg">1-10일</span>
+                    <button id="btn-next-page" class="bg-white hover:bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg text-xs font-semibold text-slate-600">다음 &gt;</button>
+                </div>
+            </div>
+            <div id="calendar-grid" class="grid grid-cols-5 gap-2">
+
+                <!-- 자바스크립트를 활용해 영구적으로 재생성되는 일차 인덱스 버튼 -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 커스텀 팝업 알림 모달 레이어 -->
+    <div id="custom-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4 transform transition-all scale-95 opacity-0 duration-300" id="modal-container">
+            <div class="text-center space-y-2">
+                <div id="modal-icon" class="text-4xl">🎉</div>
+                <h3 id="modal-title" class="text-lg font-bold text-slate-900">모달 타이틀</h3>
+                <div id="modal-content" class="text-sm text-slate-600 pt-1 leading-relaxed">상세 퀴즈 폼</div>
+            </div>
+            <div class="pt-1">
+                <button id="modal-close-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold transition-colors shadow-sm">
+                    닫기 및 확인
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 하단 라이선스 선언 푸터 -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+        <p>© 2026 Infinite Travel English Blueprint. Single File Application.</p>
+    </footer>
+
+    <!-- 무한 엔진 핵심 비즈니스 아키텍처 스크립트 -->
+    <script>
+        /* 조합형 무한 문장 메커니즘용 알고리즘 데이터베이스 */
+        const travelPool = {
+            contexts: ["공항/기내 ✈️", "호텔/숙소 🏨", "식당/카페 🍽️", "길찾기/교통 🗺️", "쇼핑/결제 🛍️", "긴급상황 🚨"],
+            
+            beginner: {
+                templates: [
+                    "Where is the {place}?",
+                    "Can I have {item}?",
+                    "How much is this {product}?",
+
+                    "I want to go to the {destination}.",
+                    "Do you accept {payment}?",
+                    "Excuse me, is this seat {status}?"
+                ],
+                koTemplates: [
+                    "{place_ko}은(는) 어디에 있나요?",
+                    "{item_ko} 좀 주시겠어요?",
+                    "이 {product_ko}은(는) 얼마인가요?",
+                    "{destination_ko}(으)로 가고 싶습니다.",
+                    "{payment_ko} 결제 가능한가요?",
+                    "실례합니다, 이 자리는 {status_ko}인가요?"
+                ],
+                hints: ["Where", "Can", "How much", "want", "accept", "seat"],
+                words: {
+                    place: [{en: "restroom", ko: "화장실"}, {en: "baggage claim area", ko: "수하물 수취대"}, {en: "bus stop", ko: "버스 정류장"}, {en: "ticket office", ko: "매표소"}, {en: "pharmacy", ko: "약국"}],
+                    item: [{en: "a cup of water", ko: "물 한 잔"}, {en: "the menu, please", ko: "메뉴판"}, {en: "a city map", ko: "도시 지도"}, {en: "the receipt", ko: "영수증"}, {en: "some extra blankets", ko: "추가 담요"}],
+                    product: [{en: "souvenir", ko: "기념품"}, {en: "t-shirt", ko: "티셔츠"}, {en: "keychain", ko: "열쇠고리"}, {en: "postcard", ko: "엽서"}, {en: "traditional hat", ko: "전통 모자"}],
+                    destination: [{en: "hotel", ko: "호텔"}, {en: "subway station", ko: "지하철역"}, {en: "museum", ko: "박물관"}, {en: "beach", ko: "해변"}, {en: "downtown area", ko: "시내 중심가"}],
+                    payment: [{en: "credit cards", ko: "신용카드"}, {en: "cash", ko: "현금"}, {en: "mobile pay", ko: "모바일 페이"}, {en: "Apple Pay", ko: "애플페이"}],
+
+                    status: [{en: "taken", ko: "주인이 있는 것"}, {en: "free", ko: "비어 있는 것"}, {en: "available", ko: "이용 가능한 것"}]
+                },
+                tips: "여행 현장에서 단어만 바꾸어 즉각 요구를 관철할 수 있는 강력한 핵심 생존 뼈대 문장입니다. 자신감 있게 먼저 내뱉어 보세요!"
+            },
+            
+            intermediate: {
+                templates: [
+                    "Could you tell me how to get to the {place}?",
+                    "I'd like to check in for my reservation under the name {name}.",
+                    "Is there a good local restaurant nearby serving {food}?",
+                    "Can I leave my heavy luggage here until {time}?",
+                    "I'd like to exchange some currency into {currency}, please.",
+                    "Could you recommend a popular tourist attraction for {audience}?"
+                ],
+                koTemplates: [
+                    "{place_ko}(으)로 가는 방법을 제게 가르쳐 주실 수 있나요?",
+                    "{name_ko}라는 이름으로 예약된 내역을 체크인하고 싶습니다.",
+                    "이 근처에 {food_ko}을(를) 잘하는 좋은 현지 식당이 있나요?",
+                    "{time_ko}까지 제 무거운 짐을 여기에 보관해 둘 수 있을까요?",
+
+                    "가진 돈을 {currency_ko}(으)로 환전하고 싶습니다.",
+                    "{audience_ko}가 방문하기에 좋은 인기 관광지를 추천해 주시겠어요?"
+                ],
+                hints: ["how to get", "under the name", "serving", "leave my", "exchange", "recommend"],
+                words: {
+                    place: [{en: "nearest train station", ko: "가장 가까운 기차역"}, {en: "duty-free shop", ko: "면세점"}, {en: "car rental desk", ko: "렌터카 창구"}, {en: "tourist information center", ko: "관광 안내소"}],
+                    name: [{en: "Smith", ko: "스미스"}, {en: "Kim", ko: "김"}, {en: "Lee", ko: "이"}, {en: "John", ko: "존"}],
+                    food: [{en: "seafood dishes", ko: "해산물 요리"}, {en: "traditional steak", ko: "전통 스테이크"}, {en: "vegetarian options", ko: "채식 메뉴"}, {en: "authentic desserts", ko: "현지 디저트"}],
+                    time: [{en: "3 PM today", ko: "오늘 오후 3시"}, {en: "this evening", ko: "오늘 저녁"}, {en: "my departure time", ko: "출발 시간"}, {en: "we return", ko: "우리가 돌아올 때"}],
+                    currency: [{en: "US dollars", ko: "미국 달러"}, {en: "Euros", ko: "유로화"}, {en: "Japanese Yen", ko: "일본 엔화"}, {en: "local currency", ko: "현지 화폐"}],
+                    audience: [{en: "family members", ko: "가족단위 여행객"}, {en: "solo travelers", ko: "혼자 온 여행자"}, {en: "taking photos", ko: "사진 찍기 좋아하는 사람"}, {en: "history lovers", ko: "역사를 사랑하는 사람"}]
+                },
+                tips: "상대방에게 정중하고 부드럽게 세부 요구사항을 전달하는 비즈니스급 에티켓 조항입니다. 동사구와 전치사 매칭에 유의하세요."
+            },
+            
+            advanced: {
+                templates: [
+                    "I seem to have misplaced my {valuable} around the lobby; could you please check the lost and found?",
+                    "Could you recommend an authentic local delicacy that can accommodate my {diet} restriction?",
+
+                    "Since my incoming flight has been heavily delayed, I would like to request a late check-out until {extended_time}.",
+                    "I am calling to report a functional issue with the {amenity} in my room; it doesn't seem to work properly.",
+                    "Is there a fixed surcharge or is the price fully inclusive of all local taxes and {fee_type}?",
+                    "Could you issue an official written receipt or statement for my insurance claim regarding this {incident}?"
+                ],
+                koTemplates: [
+                    "제가 로비 주변에서 {valuable_ko}을(를) 분실한 것 같습니다. 혹시 분실물 보관소를 확인해 주실 수 있나요?",
+                    "제 {diet_ko} 식이 제한 요건에 맞추어 조리할 수 있는 정통 현지 별미 요리를 권해주실 수 있나요?",
+                    "도착 비행편이 크게 지연되었기 때문에, {extended_time}까지 늦은 체크아웃 연장을 정중히 요청하고 싶습니다.",
+                    "제 방의 {amenity_ko}에 기능적 문제가 발견되어 전화드렸습니다. 정상적으로 작동하지 않는 것 같습니다.",
+                    "고정된 추가 요금이 따로 부과되나요, 아니면 모든 현지 세금과 {fee_type}이 완전히 포함된 총액인가요?",
+                    "이번 {incident_ko}에 대한 제 여행자 보험 청구용 공식 서면 영수증이나 확인서를 발급해 주실 수 있나요?"
+                ],
+                hints: ["lost and found", "accommodate", "late check-out", "report a", "inclusive of", "insurance claim"],
+                words: {
+                    valuable: [{en: "passport pouch", ko: "여권 파우치"}, {en: "digital camera", ko: "디지털 카메라"}, {en: "leather wallet", ko: "가죽 지갑"}, {en: "smartphone", ko: "스마트폰"}],
+                    diet: [{en: "strict vegetarian", ko: "엄격한 채식주의"}, {en: "severe peanut allergy", ko: "심한 땅콩 알레르기"}, {en: "gluten-free", ko: "글루텐 프리"}, {en: "seafood-only", ko: "해산물만 먹는"}],
+                    extended_time: [{en: "2 PM free of charge", ko: "무료로 오후 2시"}, {en: "this evening with fee", ko: "추가 요금을 내고 오늘 저녁"}, {en: "another couple of hours", ko: "두어 시간 정도 더"}],
+                    amenity: [{en: "air conditioner fan", ko: "에어컨 팬"}, {en: "hot water supply", ko: "온수 공급 장치"}, {en: "wireless internet connection", ko: "무선 인터넷 연결"}, {en: "electronic room key", ko: "전자식 객실 카드키"}],
+
+                    fee_type: [{en: "service charges", ko: "서비스 봉사료"}, {en: "resort amenities fee", ko: "리조트 시설 이용료"}, {en: "parking fee", ko: "주차 요금"}],
+                    incident: [{en: "medical treatment", ko: "병원 진료 및 치료"}, {en: "baggage damage issue", ko: "수하물 파손 사건"}, {en: "flight cancellation", ko: "항공편 결항 현상"}]
+                },
+                tips: "예기치 못한 분실, 컴플레인, 보험 서류 요청 등 해외 여행 중 직면할 수 있는 돌발 위기 상황을 지혜롭고 빈틈없이 극복하도록 돕는 완벽한 고급 표현입니다."
+            }
+        };
+
+        // 결정론적 수학 알고리즘을 이용한 씨드 기반 의사 난수 생성기 (무한 데이터 생성의 핵심)
+        function seededRandom(seed) {
+            const x = Math.sin(seed) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // 특정 일차와 레벨에 최적화된 유일무이한 문장을 실시간으로 조합하는 가상 엔진 함수
+        function generateSentenceForDay(level, day) {
+            const config = travelPool[level];
+            const totalTemplates = config.templates.length;
+            
+            // 변하지 않는 고유 씨드 생성
+
+            const baseSeed = day * 19 + (level === 'beginner' ? 100 : level === 'intermediate' ? 500 : 900);
+            
+            // 템플릿 인덱스 결정
+            const templateIdx = Math.floor(seededRandom(baseSeed) * totalTemplates);
+            let eng = config.templates[templateIdx];
+            let kor = config.koTemplates[templateIdx];
+            const hint = config.hints[templateIdx];
+            
+            // 정규식을 사용해 템플릿 내부의 동적 중괄호 변수를 매칭 단어로 치환 교체
+            const matches = eng.match(/\{[a-zA-Z_]+\}/g) || [];
+            matches.forEach((match, index) => {
+                const varName = match.replace(/\{|\}/g, '');
+                const wordList = config.words[varName];
+                if (wordList) {
+                    const wordSeed = baseSeed + (index + 1) * 31;
+                    const wordObj = wordList[Math.floor(seededRandom(wordSeed) * wordList.length)];
+                    
+                    eng = eng.replace(match, wordObj.en);
+                    kor = kor.replace(`{${varName}_ko}`, wordObj.ko);
+
+                }
+            });
+
+            // 카테고리 태그 결정
+            const contextIdx = Math.floor(seededRandom(baseSeed + 77) * travelPool.contexts.length);
+            const context = travelPool.contexts[contextIdx];
+
+            return {
+                day: day,
+                eng: eng,
+                kor: kor,
+                hint: hint,
+                context: context,
+                desc: config.tips
+            };
+        }
+
+        // 애플리케이션 핵심 클라이언트 상태 데이터 구조
+        let currentLevel = 'beginner';
+
+        let currentDay = 1;
+        let gridStartDay = 1; // 무한 스크롤 및 페이징을 위한 시작 일수
+        let masteredRecords = {
+            beginner: [],
+            intermediate: [],
+            advanced: []
+        };
+
+        // DOM 요소 포인터 바인딩 목록
+        const flashcard = document.getElementById('flashcard');
+        const cardInner = document.getElementById('card-inner');
+        const txtEng = document.getElementById('txt-eng');
+        const txtKor = document.getElementById('txt-kor');
+        const txtDesc = document.getElementById('txt-desc');
+        const cardDayIndicator = document.getElementById('card-day-indicator');
+        const cardContextTag = document.getElementById('card-context-tag');
+        const levelBadgeText = document.getElementById('level-badge-text');
+        const masteryCount = document.getElementById('mastery-count');
+        const calendarGrid = document.getElementById('calendar-grid');
+
+        
+        const pageIndicator = document.getElementById('page-indicator');
+        const btnPrevPage = document.getElementById('btn-prev-page');
+        const btnNextPage = document.getElementById('btn-next-page');
+
+        const completeBtn = document.getElementById('complete-btn');
+        const completeBtnText = document.getElementById('complete-btn-text');
+        const quizBtn = document.getElementById('quiz-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const speakBtn = document.getElementById('speak-btn');
+
+        const tabs = {
+            beginner: document.getElementById('tab-beginner'),
+            intermediate: document.getElementById('tab-intermediate'),
+            advanced: document.getElementById('tab-advanced')
+        };
+
+        const customModal = document.getElementById('custom-modal');
+        const modalContainer = document.getElementById('modal-container');
+
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+        const modalIcon = document.getElementById('modal-icon');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // 상태창 토글 컴포넌트 모달 연동
+        function showModal(title, content, icon = "🎉") {
+            modalTitle.innerText = title;
+            modalContent.innerHTML = content;
+            modalIcon.innerText = icon;
+            
+            customModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContainer.classList.remove('scale-95', 'opacity-0');
+                modalContainer.classList.add('scale-100', 'opacity-100');
+            }, 50);
+        }
+
+        function closeModal() {
+
+            modalContainer.classList.remove('scale-100', 'opacity-100');
+            modalContainer.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                customModal.classList.add('hidden');
+            }, 300);
+        }
+
+        // 로컬 브라우저 영구 영속성 동기화
+        function loadState() {
+            const savedRecords = localStorage.getItem('inf_travel_mastered_records');
+            const savedLevel = localStorage.getItem('inf_travel_level');
+            const savedDay = localStorage.getItem('inf_travel_day');
+            
+            if (savedRecords) masteredRecords = JSON.parse(savedRecords);
+            if (savedLevel) currentLevel = savedLevel;
+            if (savedDay) {
+                currentDay = parseInt(savedDay);
+                gridStartDay = Math.floor((currentDay - 1) / 10) * 10 + 1;
+            }
+
+        }
+
+        function saveState() {
+            localStorage.setItem('inf_travel_mastered_records', JSON.stringify(masteredRecords));
+            localStorage.setItem('inf_travel_level', currentLevel);
+            localStorage.setItem('inf_travel_day', currentDay.toString());
+        }
+
+        // 카테고리 한글 라벨 맵핑
+        function getLevelKoName(level) {
+            if (level === 'beginner') return '초급';
+            if (level === 'intermediate') return '중급';
+            return '고급';
+        }
+
+        // 카드 및 세부 상태 갱신 엔진
+        function renderApp() {
+            cardInner.classList.remove('card-flipped');
+            
+
+            // 무한 조합 엔진에서 특정 날짜의 문장을 연산 추출
+            const activeSentence = generateSentenceForDay(currentLevel, currentDay);
+            
+            cardDayIndicator.innerText = `DAY ${activeSentence.day}`;
+            cardContextTag.innerText = activeSentence.context;
+            txtEng.innerText = activeSentence.eng;
+            txtKor.innerText = activeSentence.kor;
+            txtDesc.innerText = activeSentence.desc;
+
+            levelBadgeText.innerText = getLevelKoName(currentLevel);
+            
+            // 토탈 암기 스코어 계산 알고리즘
+            const totalMastered = masteredRecords.beginner.length + masteredRecords.intermediate.length + masteredRecords.advanced.length;
+            masteryCount.innerText = `총 ${totalMastered}개 문장 마스터`;
+
+            // 오늘 날짜 정복 유무 파악 분기문
+            if (masteredRecords[currentLevel].includes(currentDay)) {
+                completeBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                completeBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+
+                completeBtnText.innerText = "암기 마스터 완료!";
+            } else {
+                completeBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                completeBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                completeBtnText.innerText = "이 문장 완벽히 외웠어요";
+            }
+
+            // 탭 활성화 디자인 바인딩 처리
+            Object.keys(tabs).forEach(key => {
+                if (key === currentLevel) {
+                    tabs[key].className = 'level-tab py-2.5 text-sm font-extrabold rounded-lg transition-all bg-white text-indigo-600 shadow-sm';
+                } else {
+                    tabs[key].className = 'level-tab py-2.5 text-sm font-bold rounded-lg transition-all bg-transparent text-slate-500 hover:text-slate-800';
+                }
+            });
+
+            saveState();
+            renderCalendarGrid();
+        }
+
+
+        // 페이징 기반 하단 무한 일차 달력 그리드 활성화
+        function renderCalendarGrid() {
+            calendarGrid.innerHTML = '';
+            pageIndicator.innerText = `${gridStartDay}-${gridStartDay + 9}일`;
+            btnPrevPage.disabled = gridStartDay === 1;
+
+            for (let i = 0; i < 10; i++) {
+                const dayNum = gridStartDay + i;
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.innerText = `${dayNum}일`;
+                
+                button.className = 'py-3 text-center text-xs font-bold rounded-xl border transition-all touch-manipulation ';
+                
+                if (dayNum === currentDay) {
+                    button.className += 'bg-indigo-50 border-indigo-600 text-indigo-600 ring-2 ring-indigo-600/20';
+                } else if (masteredRecords[currentLevel].includes(dayNum)) {
+                    button.className += 'bg-emerald-50 border-emerald-300 text-emerald-600';
+                } else {
+
+                    button.className += 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50';
+                }
+
+                button.addEventListener('click', () => {
+                    currentDay = dayNum;
+                    renderApp();
+                });
+
+                calendarGrid.appendChild(button);
+            }
+        }
+
+        // 이벤트 리스너 이니셜라이저
+        function initEvents() {
+            // 플래시 회전 터치 토글
+            flashcard.addEventListener('click', () => {
+                cardInner.classList.toggle('card-flipped');
+            });
+
+
+            // 난이도 변경 제어 부문
+            Object.keys(tabs).forEach(levelKey => {
+                tabs[levelKey].addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    currentLevel = levelKey;
+                    currentDay = 1;
+                    gridStartDay = 1;
+                    renderApp();
+                });
+            });
+
+            // 달력 블록 페이지 스크롤 제어
+            btnPrevPage.addEventListener('click', () => {
+                if (gridStartDay > 1) {
+                    gridStartDay -= 10;
+                    renderCalendarGrid();
+                }
+            });
+
+
+            btnNextPage.addEventListener('click', () => {
+                gridStartDay += 10;
+                renderCalendarGrid();
+            });
+
+            // Web Speech API 원어민 오디오 합성 구현부
+            speakBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const sentenceObj = generateSentenceForDay(currentLevel, currentDay);
+                
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); // 진행 중인 보이스 캐싱 큐 리셋
+                    const utterance = new SpeechSynthesisUtterance(sentenceObj.eng);
+                    utterance.lang = 'en-US';
+                    utterance.rate = 0.82; // 정확성 인지를 위한 소폭 저속 재생 매칭
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    showModal("청취 불가 알림", "현재 브라우저 환경이 오디오 음성 기능(TTS)을 지원하지 않습니다.", "⚠️");
+                }
+
+            });
+
+            // 암기 마스터 상태 토글 스위치 버튼
+            completeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!masteredRecords[currentLevel].includes(currentDay)) {
+                    masteredRecords[currentLevel].push(currentDay);
+                    showModal("참 잘하셨어요! 🎉", `[${getLevelKoName(currentLevel)}] DAY ${currentDay} 문장을 나만의 여행 가이드북에 저장했습니다.`, "🏆");
+                } else {
+                    masteredRecords[currentLevel] = masteredRecords[currentLevel].filter(d => d !== currentDay);
+                }
+                renderApp();
+            });
+
+            // 조합 단어식 스피드 암기 퀴즈 레이아웃 모달 팝업 빌더
+            quizBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const sentenceObj = generateSentenceForDay(currentLevel, currentDay);
+                
+
+                // 타겟 주요 키워드 블라인드 래핑 처리
+                const regex = new RegExp(sentenceObj.hint, 'gi');
+                const puzzleText = sentenceObj.eng.replace(regex, " [ __________ ] ");
+
+                const modalBody = `
+                    <div class="space-y-3.5 text-left bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-md">Context</span>
+                            <p class="text-sm font-semibold text-slate-600 mt-1">${sentenceObj.context}</p>
+                        </div>
+                        <hr class="border-slate-200">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">현지 번역</span>
+                            <p class="text-base font-bold text-slate-800 mt-0.5">${sentenceObj.kor}</p>
+                        </div>
+                        <hr class="border-slate-200">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-500">빈칸 퍼즐 연상퀴즈</span>
+                            <p class="text-md font-mono font-bold text-indigo-900 mt-1 leading-relaxed">${puzzleText}</p>
+
+                        </div>
+                    </div>
+                    <div class="pt-2 text-left">
+                        <details class="group cursor-pointer">
+                            <summary class="text-xs text-slate-400 font-semibold select-none group-open:text-indigo-600 transition-colors">정답 및 힌트 확인 (터치)</summary>
+                            <div class="mt-2 bg-indigo-50/70 border border-indigo-100 p-3 rounded-xl text-center">
+                                <p class="text-lg font-mono font-extrabold text-indigo-600 tracking-wider">${sentenceObj.hint}</p>
+                            </div>
+                        </details>
+                    </div>
+                `;
+
+                showModal(`DAY ${currentDay} 핵심 스피드 퀴즈`, modalBody, "🧩");
+            });
+
+            // 전체 저장 스토리지 리셋 어플리케이션 클리너
+            resetBtn.addEventListener('click', () => {
+                if (confirm("그동안 저장된 누적 마스터 암기량과 여행 진도가 영구히 소멸됩니다. 정말 초기화하시겠습니까?")) {
+                    localStorage.removeItem('inf_travel_mastered_records');
+
+                    localStorage.removeItem('inf_travel_level');
+                    localStorage.removeItem('inf_travel_day');
+                    masteredRecords = { beginner: [], intermediate: [], advanced: [] };
+                    currentLevel = 'beginner';
+                    currentDay = 1;
+                    gridStartDay = 1;
+                    renderApp();
+                }
+            });
+
+            // 모달 하이드 제어 리스너
+            modalCloseBtn.addEventListener('click', closeModal);
+            customModal.addEventListener('click', (e) => {
+                if (e.target === customModal) closeModal();
+            });
+        }
+
+        // 애플리케이션 라이프사이클 부팅 초기화
+        window.onload = function() {
+
+            loadState();
+            initEvents();
+            renderApp();
+        };
+    </script>
+</body>
+</html>
+
+
